@@ -10,6 +10,8 @@ import java.lang.annotation.Target;
 public @interface Synchronized {
     String name() default "";
 
+    String generateNameMethod() default "";
+
     String prefixValue() default "";
 
     long expiredTimeInMilliSeconds() default -1;

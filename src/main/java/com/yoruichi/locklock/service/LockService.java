@@ -61,16 +61,14 @@ public class LockService {
      * @param lockExpireTimeUnit
      * @return
      */
-    public boolean getLockIfAbsent(final String key, final String value, long waitTimeout,
-            TimeUnit waitTimeUnit, long lockExpireTime, TimeUnit lockExpireTimeUnit)
-            throws TimeoutException, InterruptedException, ExecutionException {
+    public boolean getLockIfAbsent(final String key, final String value, long waitTimeout, TimeUnit waitTimeUnit, long lockExpireTime,
+            TimeUnit lockExpireTimeUnit) throws TimeoutException, InterruptedException, ExecutionException {
         final ExecutorService exec = Executors.newSingleThreadExecutor();
         try {
             Callable<Boolean> call = () -> {
                 String realKey = PREFIX_LOCK_KEY + key;
                 boolean gotLock;
-                while (!(gotLock =
-                        redisTemplate.opsForValue().setIfAbsent(realKey, value))) {
+                while (!(gotLock = redisTemplate.opsForValue().setIfAbsent(realKey, value))) {
                     Thread.sleep(5);
                 }
                 if (lockExpireTime > 0) {
@@ -79,8 +77,10 @@ public class LockService {
                 return gotLock;
             };
             Future<Boolean> future = exec.submit(call);
-            if (waitTimeout < 0) return future.get();
-            else return future.get(waitTimeout, waitTimeUnit);
+            if (waitTimeout < 0)
+                return future.get();
+            else
+                return future.get(waitTimeout, waitTimeUnit);
         } catch (TimeoutException te) {
             logger.warn("Timeout to get lock with key {} and value {}", key, value);
             throw te;
