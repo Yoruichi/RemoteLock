@@ -49,11 +49,11 @@ public class LockAop {
         String generateNameMethodName = annotationSync.generateNameMethod();
         String name = annotationSync.name();
         try {
-            Method generateNameMethod = jp.getTarget().getClass().getMethod(generateNameMethodName);
+            Method generateNameMethod = jp.getTarget().getClass().getDeclaredMethod(generateNameMethodName);
             generateNameMethod.setAccessible(true);
             name = (String) generateNameMethod.invoke(jp.getTarget(), jp.getArgs());
         } catch (NoSuchMethodException nsme) {
-            logger.debug("No such method named {}.", generateNameMethodName);
+            logger.warn("No such method named {}.", generateNameMethodName);
         } catch (IllegalAccessException e) {
         } catch (InvocationTargetException e) {
             logger.warn("Failed to invoke the method {} with args {}.", generateNameMethodName, Arrays.toString(jp.getArgs()));
