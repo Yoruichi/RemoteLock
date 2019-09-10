@@ -21,7 +21,7 @@ public class LockLockRedisConfig {
             @Value("${spring.redis.host:localhost}") String host,
             @Value("${spring.redis.port:6379}") int port,
             @Value("${spring.redis.database.locklock:0}") int db,
-            @Value("${redis.password:}") String password
+            @Value("${spring.redis.password:}") String password
     ) {
         RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
         configuration.setHostName(host);
