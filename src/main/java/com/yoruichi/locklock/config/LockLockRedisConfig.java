@@ -8,8 +8,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisClientConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import redis.clients.jedis.JedisPoolConfig;
 
 import java.util.Objects;
@@ -42,10 +45,10 @@ public class LockLockRedisConfig {
         if (Objects.nonNull(password) && password.trim().length() > 0) {
             configuration.setPassword(password);
         }
-        JedisConnectionFactory factory = new JedisConnectionFactory(configuration);
-        factory.setPoolConfig(jedisPoolConfig);
-        factory.afterPropertiesSet();
-        RedisTemplate template = new StringRedisTemplate(factory);
+
+        LettuceConnectionFactory lettuceConnectionFactory = new LettuceConnectionFactory(configuration,
+                LettucePoolingClientConfiguration.builder().poolConfig(jedisPoolConfig).build());
+        RedisTemplate template = new StringRedisTemplate(lettuceConnectionFactory);
         logger.info("Create redis template with url {}", ((JedisConnectionFactory) template.getConnectionFactory()).getHostName());
         return template;
     }
