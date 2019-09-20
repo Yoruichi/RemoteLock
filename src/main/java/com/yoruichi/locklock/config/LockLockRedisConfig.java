@@ -50,7 +50,9 @@ public class LockLockRedisConfig {
 
         LettuceConnectionFactory lettuceConnectionFactory = new LettuceConnectionFactory(configuration,
                 LettucePoolingClientConfiguration.builder().poolConfig(poolConfig).build());
+        lettuceConnectionFactory.afterPropertiesSet();
         RedisTemplate template = new StringRedisTemplate(lettuceConnectionFactory);
+        template.afterPropertiesSet();
         return template;
     }
 
