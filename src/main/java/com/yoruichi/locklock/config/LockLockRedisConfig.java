@@ -20,14 +20,14 @@ public class LockLockRedisConfig {
 
     @Bean(value = "lock")
     public RedisTemplate<String, String> redisTemplate(
-            @Value("${spring.redis.host:localhost}") String host,
-            @Value("${spring.redis.port:6379}") int port,
+            @Value("${spring.redis.host.locklock:localhost}") String host,
+            @Value("${spring.redis.port.locklock:6379}") int port,
             @Value("${spring.redis.database.locklock:0}") int db,
-            @Value("${spring.redis.password:}") String password,
-            @Value("${spring.redis.active.locklock:64}") int maxActive,
-            @Value("${spring.redis.wait.locklock:64}") int maxWait,
-            @Value("${spring.redis.idle.max.locklock:64}") int maxIdle,
-            @Value("${spring.redis.idle.min.locklock:32}") int minIdle
+            @Value("${spring.redis.password.locklock:}") String password,
+            @Value("${spring.redis.pool.max-active.locklock:64}") int maxActive,
+            @Value("${spring.redis.pool.max-wait.locklock:-1}") int maxWait,
+            @Value("${spring.redis.pool.max-idle.locklock:64}") int maxIdle,
+            @Value("${spring.redis.pool.min-idle.locklock:32}") int minIdle
     ) {
 
         JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
