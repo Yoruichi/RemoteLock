@@ -17,8 +17,6 @@ import java.util.Objects;
 
 @Configuration
 public class LockLockRedisConfig {
-    private Logger logger = LoggerFactory.getLogger(LockLockRedisConfig.class);
-
     @Bean(value = "lock")
     public RedisTemplate<String, String> redisTemplate(
             @Value("${spring.redis.host.locklock:localhost}") String host,

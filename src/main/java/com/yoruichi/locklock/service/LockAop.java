@@ -1,5 +1,7 @@
 package com.yoruichi.locklock.service;
 
+import com.ctrip.framework.apollo.Config;
+import com.ctrip.framework.apollo.exceptions.ApolloConfigException;
 import com.yoruichi.locklock.annotations.Synchronized;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.After;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Component;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -28,10 +31,12 @@ public class LockAop {
     @Autowired
     private LockService lockService;
 
+    @com.ctrip.framework.apollo.spring.annotation.ApolloConfig
+    private Config apollo;
+
     @Pointcut("@annotation(com.yoruichi.locklock.annotations.Synchronized)")
     public void pointCut() {
     }
-
 
     private Method getMethodByName(Class clazz, String name) {
         Method[] methods = clazz.getDeclaredMethods();
@@ -81,14 +86,32 @@ public class LockAop {
         String prefixValue = annotationSync.prefixValue();
         String value = "".equals(prefixValue) ?
                 Thread.currentThread().getName() : new StringBuilder(prefixValue).append("_").append(Thread.currentThread().getName()).toString();
-        long expiredTime = annotationSync.expiredTimeInMilliSeconds();
-        long waitTime = annotationSync.waitTimeInMilliSeconds();
+
+        String expiredTimePlaceHolder = annotationSync.expiredTimeInMilliSeconds();
+        long expiredTime = getLong(expiredTimePlaceHolder);
+        String waitTimePlaceHolder = annotationSync.waitTimeInMilliSeconds();
+        long waitTime = getLong(waitTimePlaceHolder);
         logger.debug("Executing method:{} with @annotation name:{}, prefixValue:{} on thread {}.", jp.getSignature().getName(), annotationSync.name(),
                 annotationSync.prefixValue(), Thread.currentThread().getName());
         if (!lockService.getLockIfAbsent(name, value, waitTime, TimeUnit.MILLISECONDS, expiredTime, TimeUnit.MILLISECONDS)) {
             throw new InterruptedException();
         }
         logger.debug("Thread {} got lock for name {}", value, name);
+    }
+
+    private long getLong(String placeHolder) {
+        if (placeHolder.startsWith("${")) {
+            int endIndex = placeHolder.indexOf(":");
+            endIndex = endIndex < 0 ? placeHolder.length() - 1 : endIndex;
+            String key = placeHolder.substring(2, endIndex);
+            if (endIndex > 0) {
+                return apollo.getLongProperty(key, Long.valueOf(placeHolder.substring(endIndex + 1, placeHolder.length() - 1)));
+            } else {
+                return apollo.getLongProperty(key, -1L);
+            }
+        } else {
+            return Long.valueOf(placeHolder);
+        }
     }
 
     @After("pointCut()")

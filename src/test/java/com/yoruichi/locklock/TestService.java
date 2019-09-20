@@ -12,7 +12,7 @@ public class TestService {
 
     private int num;
 
-    @Synchronized(name = "test")
+    @Synchronized(name = "test", waitTimeInMilliSeconds = "${wait:9}")
     public void incrementOne() {
         num++;
     }

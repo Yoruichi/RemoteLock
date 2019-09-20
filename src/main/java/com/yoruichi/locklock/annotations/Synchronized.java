@@ -14,7 +14,7 @@ public @interface Synchronized {
 
     String prefixValue() default "";
 
-    long expiredTimeInMilliSeconds() default -1;
+    String expiredTimeInMilliSeconds() default "-1";
 
-    long waitTimeInMilliSeconds() default -1;
+    String waitTimeInMilliSeconds() default "-1";
 }
