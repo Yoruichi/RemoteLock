@@ -1,19 +1,17 @@
 package com.yoruichi.locklock.config;
 
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
-import org.springframework.data.redis.connection.jedis.JedisClientConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
-import redis.clients.jedis.JedisPoolConfig;
 
 import java.util.Objects;
 
@@ -33,11 +31,15 @@ public class LockLockRedisConfig {
             @Value("${spring.redis.pool.min-idle.locklock:32}") int minIdle
     ) {
 
-        JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
-        jedisPoolConfig.setMaxTotal(maxActive);
-        jedisPoolConfig.setMaxWaitMillis(maxWait);
-        jedisPoolConfig.setMaxIdle(maxIdle);
-        jedisPoolConfig.setMinIdle(minIdle);
+        GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
+        poolConfig.setMaxTotal(maxActive);
+        poolConfig.setMaxWaitMillis(maxWait);
+        poolConfig.setMaxIdle(maxIdle);
+        poolConfig.setMinIdle(minIdle);
+        poolConfig.setTestWhileIdle(true);
+        poolConfig.setMinEvictableIdleTimeMillis(60000L);
+        poolConfig.setTimeBetweenEvictionRunsMillis(30000L);
+        poolConfig.setNumTestsPerEvictionRun(-1);
         RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
         configuration.setHostName(host);
         configuration.setPort(port);
@@ -47,7 +49,7 @@ public class LockLockRedisConfig {
         }
 
         LettuceConnectionFactory lettuceConnectionFactory = new LettuceConnectionFactory(configuration,
-                LettucePoolingClientConfiguration.builder().poolConfig(jedisPoolConfig).build());
+                LettucePoolingClientConfiguration.builder().poolConfig(poolConfig).build());
         RedisTemplate template = new StringRedisTemplate(lettuceConnectionFactory);
         logger.info("Create redis template with url {}", ((JedisConnectionFactory) template.getConnectionFactory()).getHostName());
         return template;
