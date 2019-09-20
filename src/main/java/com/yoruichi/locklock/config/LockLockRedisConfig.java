@@ -51,7 +51,6 @@ public class LockLockRedisConfig {
         LettuceConnectionFactory lettuceConnectionFactory = new LettuceConnectionFactory(configuration,
                 LettucePoolingClientConfiguration.builder().poolConfig(poolConfig).build());
         RedisTemplate template = new StringRedisTemplate(lettuceConnectionFactory);
-        logger.info("Create redis template with url {}", ((JedisConnectionFactory) template.getConnectionFactory()).getHostName());
         return template;
     }
 
