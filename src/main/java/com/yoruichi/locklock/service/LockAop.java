@@ -11,6 +11,8 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.InvocationTargetException;
@@ -24,7 +26,7 @@ import java.util.concurrent.TimeoutException;
 
 @Aspect
 @Component
-public class LockAop {
+public class LockAop implements Ordered {
 
     private Logger logger = LoggerFactory.getLogger(LockAop.class);
 
@@ -136,5 +138,10 @@ public class LockAop {
                 annotationSync.prefixValue(), Thread.currentThread().getName());
         lockService.returnLock(name, value);
         logger.debug("Thread {} released lock for name {}", value, name);
+    }
+
+    @Override
+    public int getOrder() {
+        return apollo.getIntProperty("locklock.order", 0);
     }
 }
