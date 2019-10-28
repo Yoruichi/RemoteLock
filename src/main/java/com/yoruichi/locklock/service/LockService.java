@@ -84,13 +84,15 @@ public class LockService {
             }
         } catch (TimeoutException te) {
             logger.warn("Timeout to get lock with key {} and value {}", key, value);
+            future.cancel(true);
             throw te;
         } catch (InterruptedException e) {
+            future.cancel(true);
             throw e;
         } catch (ExecutionException e) {
+            future.cancel(true);
             throw e;
         } finally {
-            future.cancel(true);
             exec.shutdown();
         }
     }
