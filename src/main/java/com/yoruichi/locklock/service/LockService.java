@@ -67,13 +67,17 @@ public class LockService {
         final ExecutorService exec = Executors.newSingleThreadExecutor();
         Callable<Boolean> call = () -> {
             String realKey = PREFIX_LOCK_KEY + key;
-            while (!(redisTemplate.opsForValue().setIfAbsent(realKey, value))) {
-                Thread.sleep(5);
+            while (!Thread.currentThread().isInterrupted()) {
+                if (!(redisTemplate.opsForValue().setIfAbsent(realKey, value))) {
+                    Thread.sleep(5);
+                } else {
+                    if (lockExpireTime > 0) {
+                        redisTemplate.expire(realKey, lockExpireTime, lockExpireTimeUnit);
+                    }
+                    return true;
+                }
             }
-            if (lockExpireTime > 0) {
-                redisTemplate.expire(realKey, lockExpireTime, lockExpireTimeUnit);
-            }
-            return true;
+            throw new InterruptedException();
         };
         Future<Boolean> future = exec.submit(call);
         try {
