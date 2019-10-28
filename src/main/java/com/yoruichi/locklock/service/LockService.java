@@ -77,7 +77,8 @@ public class LockService {
                     return true;
                 }
             }
-            throw new InterruptedException();
+            logger.warn("Thread {} was interrupted.", Thread.currentThread().getName());
+            return false;
         };
         Future<Boolean> future = exec.submit(call);
         try {
@@ -87,15 +88,10 @@ public class LockService {
                 return future.get(waitTimeout, waitTimeUnit);
             }
         } catch (TimeoutException te) {
-            logger.warn("Timeout to get lock with key {} and value {}", key, value);
-            future.cancel(true);
-            throw te;
-        } catch (InterruptedException e) {
-            future.cancel(true);
-            throw e;
-        } catch (ExecutionException e) {
-            future.cancel(true);
-            throw e;
+            if (future.cancel(true)) {
+                logger.warn("Timeout to get lock with key {} and value {}", key, value);
+            }
+            return false;
         } finally {
             exec.shutdown();
         }
