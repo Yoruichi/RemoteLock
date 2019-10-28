@@ -6,7 +6,7 @@
 
     <groupId>com.yoruichi</groupId>
     <artifactId>locklock</artifactId>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.1.2</version>
     <packaging>jar</packaging>
 
     <name>locklock</name>
