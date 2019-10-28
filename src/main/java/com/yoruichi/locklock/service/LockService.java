@@ -8,6 +8,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.net.ConnectException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.*;
 
@@ -64,23 +65,23 @@ public class LockService {
     public boolean getLockIfAbsent(final String key, final String value, long waitTimeout, TimeUnit waitTimeUnit, long lockExpireTime,
             TimeUnit lockExpireTimeUnit) throws TimeoutException, InterruptedException, ExecutionException {
         final ExecutorService exec = Executors.newSingleThreadExecutor();
+        Callable<Boolean> call = () -> {
+            String realKey = PREFIX_LOCK_KEY + key;
+            while (!(redisTemplate.opsForValue().setIfAbsent(realKey, value))) {
+                Thread.sleep(5);
+            }
+            if (lockExpireTime > 0) {
+                redisTemplate.expire(realKey, lockExpireTime, lockExpireTimeUnit);
+            }
+            return true;
+        };
+        Future<Boolean> future = exec.submit(call);
         try {
-            Callable<Boolean> call = () -> {
-                String realKey = PREFIX_LOCK_KEY + key;
-                boolean gotLock;
-                while (!(gotLock = redisTemplate.opsForValue().setIfAbsent(realKey, value))) {
-                    Thread.sleep(5);
-                }
-                if (lockExpireTime > 0) {
-                    redisTemplate.expire(realKey, lockExpireTime, lockExpireTimeUnit);
-                }
-                return gotLock;
-            };
-            Future<Boolean> future = exec.submit(call);
-            if (waitTimeout < 0)
+            if (waitTimeout < 0) {
                 return future.get();
-            else
+            } else {
                 return future.get(waitTimeout, waitTimeUnit);
+            }
         } catch (TimeoutException te) {
             logger.warn("Timeout to get lock with key {} and value {}", key, value);
             throw te;
@@ -89,6 +90,7 @@ public class LockService {
         } catch (ExecutionException e) {
             throw e;
         } finally {
+            future.cancel(true);
             exec.shutdown();
         }
     }
