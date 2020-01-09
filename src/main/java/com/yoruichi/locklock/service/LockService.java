@@ -32,9 +32,11 @@ public class LockService {
 
     public boolean getLockIfAbsent(final String key, final String value, long expire,
             TimeUnit timeUnit) {
-        boolean succ = redisTemplate.opsForValue().setIfAbsent(PREFIX_LOCK_KEY + key, value);
-        if (succ && expire > 0) {
-            redisTemplate.expire(PREFIX_LOCK_KEY + key, expire, timeUnit);
+        boolean succ;
+        if (expire > 0) {
+            succ = redisTemplate.opsForValue().setIfAbsent(PREFIX_LOCK_KEY + key, value, expire, timeUnit);
+        } else {
+            succ = redisTemplate.opsForValue().setIfAbsent(PREFIX_LOCK_KEY + key, value);
         }
         return succ;
     }
@@ -68,12 +70,15 @@ public class LockService {
         Callable<Boolean> call = () -> {
             String realKey = PREFIX_LOCK_KEY + key;
             while (!Thread.currentThread().isInterrupted()) {
-                if (!(redisTemplate.opsForValue().setIfAbsent(realKey, value))) {
+                boolean gotLock;
+                if (lockExpireTime > 0) {
+                    gotLock = redisTemplate.opsForValue().setIfAbsent(realKey, value, lockExpireTime, lockExpireTimeUnit);
+                } else {
+                    gotLock = redisTemplate.opsForValue().setIfAbsent(realKey, value);
+                }
+                if (!gotLock) {
                     Thread.sleep(5);
                 } else {
-                    if (lockExpireTime > 0) {
-                        redisTemplate.expire(realKey, lockExpireTime, lockExpireTimeUnit);
-                    }
                     return true;
                 }
             }

@@ -2,6 +2,7 @@ package com.yoruichi.locklock.service;
 
 import com.ctrip.framework.apollo.Config;
 import com.ctrip.framework.apollo.exceptions.ApolloConfigException;
+import com.google.common.base.Strings;
 import com.yoruichi.locklock.annotations.Synchronized;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.After;
@@ -53,6 +54,9 @@ public class LockAop implements Ordered {
     private String getName(Synchronized annotationSync, Class clazz, JoinPoint jp) {
         String name = annotationSync.name();
         String generateNameMethodName = annotationSync.generateNameMethod();
+        if (Strings.isNullOrEmpty(generateNameMethodName)) {
+            return name;
+        }
         try {
             Method generateNameMethod = getMethodByName(clazz, generateNameMethodName);
             if (Objects.isNull(generateNameMethod)) {
