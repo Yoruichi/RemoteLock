@@ -1,6 +1,7 @@
 package com.yoruichi.locklock;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,11 @@ public class LocklockApplicationTests {
     @Autowired
     private TestService testService;
 
+    @Before
+    public void reset() {
+        testService.reset();
+    }
+
     @Test
     public void contextLoads() {
         ExecutorService exec = Executors.newFixedThreadPool(4);
@@ -30,7 +36,8 @@ public class LocklockApplicationTests {
             e.printStackTrace();
         }
 
-        Assert.assertEquals(10000, testService.getNum());
+        Assert.assertEquals(10000, testService.getActNum());
+        Assert.assertEquals(true, testService.getNum() < 10000);
     }
 
 }
