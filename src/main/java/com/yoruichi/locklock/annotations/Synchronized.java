@@ -16,5 +16,5 @@ public @interface Synchronized {
 
     String expiredTimeInMilliSeconds() default "-1";
 
-    String waitTimeInMilliSeconds() default "-1";
+    String waitTimeInMilliSeconds() default "0";
 }

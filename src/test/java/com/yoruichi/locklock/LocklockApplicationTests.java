@@ -25,19 +25,19 @@ public class LocklockApplicationTests {
 
     @Test
     public void contextLoads() {
-        ExecutorService exec = Executors.newFixedThreadPool(4);
+        ExecutorService exec = Executors.newFixedThreadPool(2);
         for (int i = 0; i < 10000; i++) {
             exec.submit(() -> testService.incrementOne());
         }
 
         try {
-            Thread.sleep(10 * 1000);
+            Thread.sleep(20 * 1000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
         Assert.assertEquals(10000, testService.getActNum());
-        Assert.assertEquals(true, testService.getNum() < 10000);
+        Assert.assertEquals(true, testService.getNum() <= 10000);
     }
 
 }

@@ -1,5 +1,7 @@
 package com.yoruichi.locklock.service;
 
+import io.lettuce.core.RedisFuture;
+import io.lettuce.core.SetArgs;
 import io.lettuce.core.api.StatefulConnection;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.async.RedisAsyncCommands;
@@ -29,9 +31,6 @@ public class LockService {
     @Qualifier("lock")
     private RedisTemplate<String, String> redisTemplate;
 
-    @Autowired
-    private GenericObjectPool<StatefulRedisConnection<String, String>> lettucePool;
-
     private Logger logger = LoggerFactory.getLogger(LockService.class);
 
     private static final String PREFIX_LOCK_KEY = "LOCK_";
@@ -60,22 +59,51 @@ public class LockService {
         return getLockIfAbsent(key, value, -1, null);
     }
 
+    /**
+     * Get lock for key with timeout.If set @param timeout -1, means it will be block to wait for getting the lock.
+     * And if set @param lockExpireTime -1 means the lock will be never expired.
+     *
+     * @param key
+     * @param value
+     * @param waitTimeout
+     * @param waitTimeUnit
+     * @param lockExpireTime
+     * @param lockExpireTimeUnit
+     * @return
+     */
     public boolean getLockIfAbsent(final String key, final String value, long waitTimeout, TimeUnit waitTimeUnit, long lockExpireTime,
-            TimeUnit lockExpireTimeUnit) throws InterruptedException, TimeoutException {
-        final String realKey = PREFIX_LOCK_KEY + key;
-        try (StatefulRedisConnection<String, String> conn = lettucePool.borrowObject()) {
-            RedisAsyncCommands<String, String> rac = conn.async();
-            if (lockExpireTime > 0) {
-                String res = rac.psetex(realKey, lockExpireTimeUnit.toMillis(lockExpireTime), value).get(waitTimeout, waitTimeUnit);
-                return LettuceConverters.stringToBoolean(res);
-            } else {
-                return rac.setex(realKey, -1, value).thenApply(LettuceConverters::stringToBoolean).toCompletableFuture().complete(false);
+            TimeUnit lockExpireTimeUnit) throws TimeoutException, InterruptedException, ExecutionException {
+        CompletableFuture<Boolean> cf = CompletableFuture.supplyAsync(() -> {
+            String realKey = PREFIX_LOCK_KEY + key;
+            while (!Thread.currentThread().isInterrupted()) {
+                boolean gotLock;
+                if (lockExpireTime > 0) {
+                    gotLock = redisTemplate.opsForValue().setIfAbsent(realKey, value, lockExpireTime, lockExpireTimeUnit);
+                } else {
+                    gotLock = redisTemplate.opsForValue().setIfAbsent(realKey, value);
+                }
+                if (!gotLock) {
+                    try {
+                        Thread.sleep(5);
+                    } catch (InterruptedException e) {
+                    }
+                } else {
+                    return true;
+                }
             }
-        } catch (InterruptedException ie) {
-            throw ie;
+            logger.warn("Thread {} was interrupted.", Thread.currentThread().getName());
+            return false;
+        });
+        try {
+            if (waitTimeout < 0) {
+                return cf.get();
+            } else {
+                return cf.get(waitTimeout, waitTimeUnit);
+            }
         } catch (TimeoutException te) {
-            throw te;
-        } catch (Exception e) {
+            if (cf.cancel(true)) {
+                logger.warn("Timeout to get lock with key {} and value {}", key, value);
+            }
             return false;
         }
     }

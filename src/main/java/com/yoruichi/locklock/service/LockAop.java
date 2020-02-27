@@ -99,10 +99,17 @@ public class LockAop implements Ordered {
         long waitTime = getLong(waitTimePlaceHolder);
         logger.debug("Executing method:{} with @annotation name:{}, prefixValue:{} on thread {}.", jp.getSignature().getName(), annotationSync.name(),
                 annotationSync.prefixValue(), Thread.currentThread().getName());
-        if (!lockService.getLockIfAbsent(name, value, waitTime, TimeUnit.MILLISECONDS, expiredTime, TimeUnit.MILLISECONDS)) {
+        boolean locked;
+        if (waitTime == 0) {
+            locked = lockService.getLockIfAbsent(name, value, expiredTime, TimeUnit.MILLISECONDS);
+        } else {
+            locked = lockService.getLockIfAbsent(name, value, waitTime, TimeUnit.MILLISECONDS, expiredTime, TimeUnit.MILLISECONDS);
+        }
+        if (locked) {
+            logger.debug("Thread {} got lock for name {}", value, name);
+        } else {
             throw new InterruptedException();
         }
-        logger.debug("Thread {} got lock for name {}", value, name);
     }
 
     private long getLong(String placeHolder) {
